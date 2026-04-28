@@ -2,18 +2,31 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0e1a12">
   <title>Golf Pass Calculator</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
     body {
       font-family: 'Georgia', serif;
       background: #0e1a12;
       color: #e8f0ea;
+      color-scheme: dark;
       min-height: 100vh;
+      min-height: 100dvh;
       padding: 2rem;
+      padding-top: max(2rem, env(safe-area-inset-top, 0px));
+      padding-right: max(2rem, env(safe-area-inset-right, 0px));
+      padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
+      padding-left: max(2rem, env(safe-area-inset-left, 0px));
+      touch-action: manipulation;
     }
 
     h1 {
@@ -34,10 +47,11 @@
 
     .layout {
       display: grid;
-      grid-template-columns: 300px 1fr;
+      grid-template-columns: minmax(260px, 300px) 1fr;
       gap: 2rem;
       max-width: 1100px;
       margin: 0 auto;
+      align-items: start;
     }
 
     /* --- Controls Panel --- */
@@ -58,6 +72,11 @@
 
     .control-group {
       margin-bottom: 1.25rem;
+    }
+
+    .control-group input[type="range"] {
+      display: block;
+      margin-top: 0.15rem;
     }
 
     .control-group label {
@@ -258,6 +277,8 @@
       border: 1px solid #1e3020;
       border-radius: 8px;
       padding: 1.25rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .table-panel h2 {
@@ -270,6 +291,7 @@
 
     table {
       width: 100%;
+      min-width: 280px;
       border-collapse: collapse;
       font-size: 0.8rem;
     }
@@ -349,13 +371,169 @@
       background: rgba(90, 170, 90, 0.3);
       pointer-events: none;
     }
+
+    .page-title {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 max(0px, env(safe-area-inset-right)) 0 max(0px, env(safe-area-inset-left));
+    }
+
+    @media (max-width: 900px) {
+      body {
+        padding: max(0.875rem, env(safe-area-inset-top)) max(0.875rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(0.875rem, env(safe-area-inset-left));
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+      }
+
+      .results {
+        order: -1;
+      }
+
+      .controls {
+        order: 0;
+      }
+
+      .subtitle {
+        margin-bottom: 1.25rem;
+        line-height: 1.45;
+      }
+
+      .cards {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+      }
+
+      .stats-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+      }
+
+      .chart-header {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      .legend {
+        flex-wrap: wrap;
+        gap: 0.5rem 1rem;
+      }
+
+      .chart-container {
+        height: min(42vw, 260px);
+        min-height: 200px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      h1 {
+        font-size: 1.35rem;
+        line-height: 1.25;
+      }
+
+      .subtitle {
+        font-size: 0.72rem;
+      }
+
+      .cards {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        padding: 1rem;
+      }
+
+      .card-cost {
+        font-size: 1.65rem;
+      }
+
+      .stat {
+        padding: 0.85rem;
+      }
+
+      .stat-val {
+        font-size: 1.1rem;
+      }
+
+      .controls,
+      .chart-panel,
+      .table-panel {
+        padding: 1rem;
+      }
+
+      input[type="range"] {
+        height: 10px;
+        border-radius: 5px;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        width: 24px;
+        height: 24px;
+        margin-top: -7px;
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+      }
+
+      input[type="range"]::-moz-range-track {
+        height: 10px;
+        border-radius: 5px;
+      }
+
+      .control-group {
+        margin-bottom: 1.1rem;
+      }
+
+      .rate-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+        align-items: stretch;
+      }
+
+      .rate-row label {
+        font-size: 0.74rem;
+      }
+
+      .rate-row input[type="number"] {
+        width: 100%;
+        max-width: none;
+        min-height: 44px;
+        font-size: 16px;
+        padding: 8px 10px;
+      }
+
+      table {
+        font-size: 0.72rem;
+      }
+
+      th, td {
+        padding-right: 0.5rem;
+      }
+
+      td:first-child {
+        max-width: 42vw;
+      }
+
+      .chart-container {
+        height: 220px;
+        min-height: 180px;
+      }
+
+      .chart-header h2 {
+        line-height: 1.35;
+      }
+    }
   </style>
 </head>
 <body>
 
-  <div style="max-width: 1100px; margin: 0 auto;">
+  <div class="page-title">
     <h1>Golf Pass Calculator</h1>
-    <p class="subtitle">Season cost analysis &mdash; London, ON</p>
+    <p class="subtitle">Season cost analysis | Currently set to Fanshawe Golf Course, The Quarry, in London, ON</p>
   </div>
 
   <div class="layout">
@@ -579,6 +757,7 @@
           const { ctx, chartArea, scales } = chart;
           const x = scales.x.getPixelForValue(rounds);
           if (x < chartArea.left || x > chartArea.right) return;
+          const isNarrow = typeof window !== 'undefined' && window.matchMedia('(max-width: 520px)').matches;
           ctx.save();
           ctx.beginPath();
           ctx.strokeStyle = 'rgba(90,170,90,0.4)';
@@ -589,8 +768,10 @@
           ctx.stroke();
           ctx.setLineDash([]);
           ctx.fillStyle = 'rgba(90,170,90,0.7)';
-          ctx.font = '11px monospace';
-          ctx.fillText(`${rounds} rounds`, x + 5, chartArea.top + 16);
+          ctx.font = (isNarrow ? '10px' : '11px') + ' monospace';
+          const label = `${rounds} rounds`;
+          const lx = Math.min(x + 4, chartArea.right - ctx.measureText(label).width - 2);
+          ctx.fillText(label, Math.max(chartArea.left + 2, lx), chartArea.top + (isNarrow ? 12 : 16));
           ctx.restore();
         }
       };
@@ -665,6 +846,14 @@
     ['r-no-prime','r-no-twi','r-reg-up','r-reg-prime','r-reg-twi','r-unlim-up','r-cart'].forEach(id =>
       document.getElementById(id).addEventListener('input', render)
     );
+
+    let resizeDebounce;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeDebounce);
+      resizeDebounce = setTimeout(() => {
+        if (chart) chart.resize();
+      }, 100);
+    });
 
     render();
   </script>
