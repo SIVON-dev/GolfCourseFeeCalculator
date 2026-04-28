@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Golf Pass Calculator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: #0e1a12;
+      color: #e8f0ea;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: normal;
+      letter-spacing: 0.04em;
+      color: #a8d4a8;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: #5a7a5a;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 2rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* --- Controls Panel --- */
+    .controls {
+      background: #141f16;
+      border: 1px solid #1e3020;
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+
+    .controls h2 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #4a6a4a;
+      margin-bottom: 1.25rem;
+    }
+
+    .control-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .control-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: #8aaa8a;
+      margin-bottom: 0.4rem;
+    }
+
+    .control-group label span {
+      color: #c8e8c8;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 3px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: #1e3020;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #5aaa5a;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #5aaa5a;
+      border: none;
+      cursor: pointer;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #1e3020;
+      margin: 1.25rem 0;
+    }
+
+    .rates-section h2 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #4a6a4a;
+      margin-bottom: 1rem;
+    }
+
+    .rate-group {
+      margin-bottom: 1rem;
+    }
+
+    .rate-group-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #3a5a3a;
+      margin-bottom: 0.4rem;
+    }
+
+    .rate-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.3rem;
+    }
+
+    .rate-row label {
+      font-size: 0.78rem;
+      color: #6a8a6a;
+    }
+
+    .rate-row input[type="number"] {
+      width: 80px;
+      background: #0e1a12;
+      border: 1px solid #1e3020;
+      border-radius: 4px;
+      color: #c8e8c8;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      padding: 3px 6px;
+      text-align: right;
+      outline: none;
+    }
+
+    .rate-row input[type="number"]:focus {
+      border-color: #5aaa5a;
+    }
+
+    /* --- Results Panel --- */
+    .results { display: flex; flex-direction: column; gap: 1.5rem; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .card {
+      background: #141f16;
+      border: 1px solid #1e3020;
+      border-radius: 8px;
+      padding: 1.25rem;
+      position: relative;
+    }
+
+    .card.best {
+      border-color: #5aaa5a;
+      background: #111e13;
+    }
+
+    .best-badge {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #5aaa5a;
+      color: #0e1a12;
+      font-size: 0.65rem;
+      font-weight: bold;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 2px 10px;
+      border-radius: 10px;
+      white-space: nowrap;
+    }
+
+    .card-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #4a6a4a;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-cost {
+      font-size: 2rem;
+      font-family: 'Courier New', monospace;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-breakdown {
+      font-size: 0.72rem;
+      color: #4a6a4a;
+      line-height: 1.6;
+    }
+
+    .card-savings {
+      font-size: 0.75rem;
+      margin-top: 0.5rem;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* --- Stats Row --- */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .stat {
+      background: #141f16;
+      border: 1px solid #1e3020;
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .stat-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #4a6a4a;
+      margin-bottom: 0.3rem;
+    }
+
+    .stat-val {
+      font-size: 1.3rem;
+      font-family: 'Courier New', monospace;
+      color: #a8d4a8;
+    }
+
+    /* --- Break-even Table --- */
+    .table-panel {
+      background: #141f16;
+      border: 1px solid #1e3020;
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+
+    .table-panel h2 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #4a6a4a;
+      margin-bottom: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    th {
+      text-align: left;
+      font-weight: normal;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #3a5a3a;
+      padding: 0 0 0.5rem 0;
+      border-bottom: 1px solid #1e3020;
+    }
+
+    td {
+      padding: 0.45rem 0;
+      border-bottom: 1px solid #131e15;
+      color: #8aaa8a;
+    }
+
+    td:last-child { color: #a8d4a8; font-family: 'Courier New', monospace; }
+
+    tr:last-child td { border-bottom: none; }
+
+    /* --- Chart --- */
+    .chart-panel {
+      background: #141f16;
+      border: 1px solid #1e3020;
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .chart-header h2 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #4a6a4a;
+    }
+
+    .legend {
+      display: flex;
+      gap: 1.25rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      color: #6a8a6a;
+    }
+
+    .legend-line {
+      width: 20px;
+      height: 2px;
+    }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 280px;
+    }
+
+    .current-marker {
+      position: absolute;
+      top: 0;
+      bottom: 30px;
+      width: 1px;
+      background: rgba(90, 170, 90, 0.3);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div style="max-width: 1100px; margin: 0 auto;">
+    <h1>Golf Pass Calculator</h1>
+    <p class="subtitle">Season cost analysis &mdash; London, ON</p>
+  </div>
+
+  <div class="layout">
+
+    <!-- Controls -->
+    <aside class="controls">
+      <h2>Assumptions</h2>
+
+      <div class="control-group">
+        <label>Rounds per week <span id="rpw-out">2.2</span></label>
+        <input type="range" id="rpw" min="0.5" max="7" step="0.1" value="2.2">
+      </div>
+
+      <div class="control-group">
+        <label>Season length <span id="months-out">6 mo</span></label>
+        <input type="range" id="months" min="1" max="8" step="0.5" value="6">
+      </div>
+
+      <div class="control-group">
+        <label>Twilight rounds <span id="twi-out">30%</span></label>
+        <input type="range" id="twi" min="0" max="100" step="5" value="30">
+      </div>
+
+      <div class="control-group">
+        <label>Cart usage <span id="cart-out">90%</span></label>
+        <input type="range" id="cart" min="0" max="100" step="5" value="90">
+      </div>
+
+      <hr class="divider">
+
+      <div class="rates-section">
+        <h2>Rates ($)</h2>
+
+        <div class="rate-group">
+          <div class="rate-group-label">No pass</div>
+          <div class="rate-row"><label>Prime time</label><input type="number" id="r-no-prime" value="43.00" step="0.25"></div>
+          <div class="rate-row"><label>Twilight</label><input type="number" id="r-no-twi" value="28.25" step="0.25"></div>
+        </div>
+
+        <div class="rate-group">
+          <div class="rate-group-label">Regular pass</div>
+          <div class="rate-row"><label>Upfront</label><input type="number" id="r-reg-up" value="301.80" step="0.25"></div>
+          <div class="rate-row"><label>Prime time</label><input type="number" id="r-reg-prime" value="27.00" step="0.25"></div>
+          <div class="rate-row"><label>Twilight</label><input type="number" id="r-reg-twi" value="18.50" step="0.25"></div>
+        </div>
+
+        <div class="rate-group">
+          <div class="rate-group-label">Unlimited pass</div>
+          <div class="rate-row"><label>Upfront</label><input type="number" id="r-unlim-up" value="1082.30" step="0.25"></div>
+        </div>
+
+        <div class="rate-group">
+          <div class="rate-group-label">Cart</div>
+          <div class="rate-row"><label>Fee per round</label><input type="number" id="r-cart" value="23.50" step="0.25"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Results -->
+    <main class="results">
+
+      <!-- Cost cards -->
+      <div class="cards" id="cards"></div>
+
+      <!-- Stats -->
+      <div class="stats-row" id="stats"></div>
+
+      <!-- Chart -->
+      <div class="chart-panel">
+        <div class="chart-header">
+          <h2>Total cost vs. rounds played</h2>
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-line" style="background:#4a9eff"></div>No pass
+            </div>
+            <div class="legend-item">
+              <div class="legend-line" style="background:#a87fdd; border-top: 2px dashed #a87fdd; border-top-style: dashed; height:0"></div>Regular
+            </div>
+            <div class="legend-item">
+              <div class="legend-line" style="background:#dd7a4a; border-top: 2px dotted #dd7a4a; border-top-style: dotted; height:0"></div>Unlimited
+            </div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="chart"></canvas>
+        </div>
+      </div>
+
+      <!-- Break-even table -->
+      <div class="table-panel">
+        <h2>Break-even analysis</h2>
+        <table id="be-table">
+          <thead>
+            <tr>
+              <th>Comparison</th>
+              <th>Break-even rounds</th>
+              <th>Break-even weeks</th>
+            </tr>
+          </thead>
+          <tbody id="be-body"></tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    function getRates() {
+      return {
+        noPrime:   parseFloat(document.getElementById('r-no-prime').value)  || 43,
+        noTwi:     parseFloat(document.getElementById('r-no-twi').value)    || 28.25,
+        regUp:     parseFloat(document.getElementById('r-reg-up').value)    || 301.80,
+        regPrime:  parseFloat(document.getElementById('r-reg-prime').value) || 27,
+        regTwi:    parseFloat(document.getElementById('r-reg-twi').value)   || 18.50,
+        unlimUp:   parseFloat(document.getElementById('r-unlim-up').value)  || 1082.30,
+        cart:      parseFloat(document.getElementById('r-cart').value)      || 23.50
+      };
+    }
+
+    function calcCosts(rounds, twilightPct, cartPct, R) {
+      const prime    = rounds * (1 - twilightPct / 100);
+      const twi      = rounds * (twilightPct / 100);
+      const cartTotal = rounds * (cartPct / 100) * R.cart;
+      return {
+        noCost:    prime * R.noPrime  + twi * R.noTwi  + cartTotal,
+        regCost:   R.regUp + prime * R.regPrime + twi * R.regTwi + cartTotal,
+        unlimCost: R.unlimUp + cartTotal,
+        cartTotal
+      };
+    }
+
+    function breakEven(twilightPct, cartPct, R) {
+      let beNoReg = null, beRegUnlim = null, beNoUnlim = null;
+      for (let r = 1; r <= 500; r++) {
+        const { noCost, regCost, unlimCost } = calcCosts(r, twilightPct, cartPct, R);
+        if (!beNoReg    && regCost   <= noCost)  beNoReg    = r;
+        if (!beRegUnlim && unlimCost <= regCost) beRegUnlim = r;
+        if (!beNoUnlim  && unlimCost <= noCost)  beNoUnlim  = r;
+      }
+      return { beNoReg, beRegUnlim, beNoUnlim };
+    }
+
+    let chart = null;
+
+    function render() {
+      const rpw        = parseFloat(document.getElementById('rpw').value);
+      const months     = parseFloat(document.getElementById('months').value);
+      const twilightPct = parseFloat(document.getElementById('twi').value);
+      const cartPct    = parseFloat(document.getElementById('cart').value);
+      const R          = getRates();
+
+      const weeks  = months * (365.25 / 12 / 7);
+      const rounds = Math.round(rpw * weeks * 10) / 10;
+
+      // Update display values
+      document.getElementById('rpw-out').textContent    = rpw.toFixed(1);
+      document.getElementById('months-out').textContent = months + ' mo';
+      document.getElementById('twi-out').textContent    = twilightPct + '%';
+      document.getElementById('cart-out').textContent   = cartPct + '%';
+
+      const { noCost, regCost, unlimCost, cartTotal } = calcCosts(rounds, twilightPct, cartPct, R);
+      const costs = [noCost, regCost, unlimCost];
+      const minCost = Math.min(...costs);
+
+      // --- Cards ---
+      const cardDefs = [
+        {
+          label: 'No pass',
+          cost: noCost,
+          color: '#4a9eff',
+          breakdown: `${(rounds*(1-twilightPct/100)).toFixed(1)} prime @ $${R.noPrime}<br>${(rounds*twilightPct/100).toFixed(1)} twilight @ $${R.noTwi}<br>Cart: $${cartTotal.toFixed(2)}`
+        },
+        {
+          label: 'Regular pass',
+          cost: regCost,
+          color: '#a87fdd',
+          breakdown: `$${R.regUp} upfront<br>${(rounds*(1-twilightPct/100)).toFixed(1)} prime @ $${R.regPrime}<br>${(rounds*twilightPct/100).toFixed(1)} twilight @ $${R.regTwi}<br>Cart: $${cartTotal.toFixed(2)}`
+        },
+        {
+          label: 'Unlimited pass',
+          cost: unlimCost,
+          color: '#dd7a4a',
+          breakdown: `$${R.unlimUp} upfront<br>Cart: $${cartTotal.toFixed(2)}`
+        }
+      ];
+
+      document.getElementById('cards').innerHTML = cardDefs.map((c, i) => {
+        const isBest = Math.abs(c.cost - minCost) < 0.01;
+        const savings = costs.filter((_, j) => j !== i).map(v => v - c.cost);
+        const maxSaving = Math.max(...savings);
+        return `<div class="card${isBest ? ' best' : ''}">
+          ${isBest ? '<div class="best-badge">Best value</div>' : ''}
+          <div class="card-label">${c.label}</div>
+          <div class="card-cost" style="color:${c.color}">$${c.cost.toFixed(2)}</div>
+          <div class="card-breakdown">${c.breakdown}</div>
+          ${maxSaving > 0.01 ? `<div class="card-savings" style="color:#5aaa5a">saves $${maxSaving.toFixed(2)}</div>` : ''}
+        </div>`;
+      }).join('');
+
+      // --- Stats ---
+      const primeRounds = rounds * (1 - twilightPct / 100);
+      const twiRounds   = rounds * twilightPct / 100;
+      document.getElementById('stats').innerHTML = `
+        <div class="stat"><div class="stat-label">Total rounds</div><div class="stat-val">${rounds}</div></div>
+        <div class="stat"><div class="stat-label">Prime time</div><div class="stat-val">${primeRounds.toFixed(1)}</div></div>
+        <div class="stat"><div class="stat-label">Twilight</div><div class="stat-val">${twiRounds.toFixed(1)}</div></div>
+        <div class="stat"><div class="stat-label">Total cart fees</div><div class="stat-val">$${cartTotal.toFixed(0)}</div></div>
+      `;
+
+      // --- Chart ---
+      const maxR  = Math.max(80, Math.ceil(rounds * 1.5));
+      const labels  = Array.from({ length: maxR }, (_, i) => i + 1);
+      const noData    = labels.map(r => calcCosts(r, twilightPct, cartPct, R).noCost);
+      const regData   = labels.map(r => calcCosts(r, twilightPct, cartPct, R).regCost);
+      const unlimData = labels.map(r => calcCosts(r, twilightPct, cartPct, R).unlimCost);
+
+      // vertical line plugin for current rounds
+      const currentRoundsPlugin = {
+        id: 'currentLine',
+        afterDraw(chart) {
+          const { ctx, chartArea, scales } = chart;
+          const x = scales.x.getPixelForValue(rounds);
+          if (x < chartArea.left || x > chartArea.right) return;
+          ctx.save();
+          ctx.beginPath();
+          ctx.strokeStyle = 'rgba(90,170,90,0.4)';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.moveTo(x, chartArea.top);
+          ctx.lineTo(x, chartArea.bottom);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = 'rgba(90,170,90,0.7)';
+          ctx.font = '11px monospace';
+          ctx.fillText(`${rounds} rounds`, x + 5, chartArea.top + 16);
+          ctx.restore();
+        }
+      };
+
+      if (chart) {
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = noData;
+        chart.data.datasets[1].data = regData;
+        chart.data.datasets[2].data = unlimData;
+        chart.update();
+      } else {
+        chart = new Chart(document.getElementById('chart'), {
+          type: 'line',
+          plugins: [currentRoundsPlugin],
+          data: {
+            labels,
+            datasets: [
+              { label: 'No pass',       data: noData,    borderColor: '#4a9eff', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0 },
+              { label: 'Regular pass',  data: regData,   borderColor: '#a87fdd', backgroundColor: 'transparent', borderWidth: 2, borderDash: [6,4], pointRadius: 0, tension: 0 },
+              { label: 'Unlimited pass',data: unlimData, borderColor: '#dd7a4a', backgroundColor: 'transparent', borderWidth: 2, borderDash: [2,4], pointRadius: 0, tension: 0 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#141f16',
+                borderColor: '#1e3020',
+                borderWidth: 1,
+                titleColor: '#4a6a4a',
+                bodyColor: '#a8d4a8',
+                callbacks: {
+                  label: ctx => ` ${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}`
+                }
+              }
+            },
+            scales: {
+              x: {
+                title: { display: true, text: 'Rounds played', color: '#4a6a4a', font: { size: 11 } },
+                ticks: { color: '#4a6a4a', maxTicksLimit: 12 },
+                grid: { color: '#1a2a1c' }
+              },
+              y: {
+                title: { display: true, text: 'Total cost ($)', color: '#4a6a4a', font: { size: 11 } },
+                ticks: { color: '#4a6a4a', callback: v => '$' + v.toFixed(0) },
+                grid: { color: '#1a2a1c' }
+              }
+            }
+          }
+        });
+      }
+
+      // --- Break-even table ---
+      const { beNoReg, beRegUnlim, beNoUnlim } = breakEven(twilightPct, cartPct, R);
+      const rpwVal = rpw;
+      const fmt = r => r ? `${r} rounds` : 'never';
+      const fmtWk = r => r ? `${(r / rpwVal).toFixed(1)} wks` : '—';
+      document.getElementById('be-body').innerHTML = `
+        <tr><td>No pass → Regular pass</td><td>${fmt(beNoReg)}</td><td>${fmtWk(beNoReg)}</td></tr>
+        <tr><td>Regular pass → Unlimited</td><td>${fmt(beRegUnlim)}</td><td>${fmtWk(beRegUnlim)}</td></tr>
+        <tr><td>No pass → Unlimited</td><td>${fmt(beNoUnlim)}</td><td>${fmtWk(beNoUnlim)}</td></tr>
+      `;
+    }
+
+    // Attach listeners
+    ['rpw','months','twi','cart'].forEach(id =>
+      document.getElementById(id).addEventListener('input', render)
+    );
+    ['r-no-prime','r-no-twi','r-reg-up','r-reg-prime','r-reg-twi','r-unlim-up','r-cart'].forEach(id =>
+      document.getElementById(id).addEventListener('input', render)
+    );
+
+    render();
+  </script>
+</body>
+</html>
