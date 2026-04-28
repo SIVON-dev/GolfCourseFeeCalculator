@@ -231,6 +231,13 @@
     /* --- Results Panel --- */
     .results { display: flex; flex-direction: column; gap: 1.5rem; }
 
+    @media (min-width: 901px) {
+      .results > .stats-row { order: 1; }
+      .results > .cards { order: 2; }
+      .results > .table-panel { order: 3; }
+      .results > .chart-panel { order: 4; }
+    }
+
     .cards {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
