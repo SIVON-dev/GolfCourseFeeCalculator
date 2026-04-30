@@ -618,23 +618,18 @@
       <h2>Assumptions</h2>
 
       <div class="control-group">
-        <label>Rounds per week <span id="rpw-out">2.2</span></label>
-        <input type="range" id="rpw" min="0.5" max="7" step="0.1" value="2.2">
+        <label>Rounds per season <span id="rounds-out">57</span></label>
+        <input type="range" id="rounds-season" min="5" max="150" step="1" value="57">
       </div>
 
       <div class="control-group">
-        <label>Season length <span id="months-out">6 mo</span></label>
-        <input type="range" id="months" min="1" max="8" step="0.5" value="6">
+        <label>Twilight rounds <span id="twi-out">17</span></label>
+        <input type="range" id="twi" min="0" max="57" step="1" value="17">
       </div>
 
       <div class="control-group">
-        <label>Twilight rounds <span id="twi-out">30%</span></label>
-        <input type="range" id="twi" min="0" max="100" step="5" value="30">
-      </div>
-
-      <div class="control-group">
-        <label>Cart usage <span id="cart-out">90%</span></label>
-        <input type="range" id="cart" min="0" max="100" step="5" value="90">
+        <label>Rounds with cart <span id="cart-out">51</span></label>
+        <input type="range" id="cart" min="0" max="57" step="1" value="51">
       </div>
 
       <hr class="divider">
@@ -663,6 +658,11 @@
         <div class="rate-group">
           <div class="rate-group-label">Cart</div>
           <div class="rate-row"><label>Fee per round</label><input type="number" id="r-cart" value="23.50" step="0.25"></div>
+        </div>
+
+        <div class="rate-group">
+          <div class="rate-group-label">Tax</div>
+          <div class="rate-row"><label>Sales tax (%)</label><input type="number" id="tax-pct" value="0" min="0" max="50" step="0.01" title="Applied to entire season total"></div>
         </div>
       </div>
     </aside>
@@ -699,7 +699,6 @@
             <tr>
               <th>Comparison</th>
               <th>Break-even rounds</th>
-              <th>Break-even weeks</th>
             </tr>
           </thead>
           <tbody id="be-body"></tbody>
@@ -728,6 +727,16 @@
       };
     }
 
+    function getTaxPct() {
+      const v = parseFloat(document.getElementById('tax-pct').value);
+      if (Number.isNaN(v) || v < 0) return 0;
+      return v;
+    }
+
+    function applyTax(preTaxTotal, taxPct) {
+      return preTaxTotal * (1 + taxPct / 100);
+    }
+
     function calcCosts(rounds, twilightPct, cartPct, R) {
       const prime    = rounds * (1 - twilightPct / 100);
       const twi      = rounds * (twilightPct / 100);
@@ -754,24 +763,45 @@
     let chart = null;
 
     function render() {
-      const rpw        = parseFloat(document.getElementById('rpw').value);
-      const months     = parseFloat(document.getElementById('months').value);
-      const twilightPct = parseFloat(document.getElementById('twi').value);
-      const cartPct    = parseFloat(document.getElementById('cart').value);
+      const rounds = Math.max(1, parseInt(document.getElementById('rounds-season').value, 10) || 57);
+
+      const twiEl = document.getElementById('twi');
+      twiEl.max = rounds;
+      let twilightCount = parseInt(twiEl.value, 10);
+      if (Number.isNaN(twilightCount) || twilightCount < 0) twilightCount = 0;
+      if (twilightCount > rounds) twilightCount = rounds;
+      if (twiEl.value !== String(twilightCount)) twiEl.value = String(twilightCount);
+
+      const cartEl = document.getElementById('cart');
+      cartEl.max = rounds;
+      let cartCount = parseInt(cartEl.value, 10);
+      if (Number.isNaN(cartCount) || cartCount < 0) cartCount = 0;
+      if (cartCount > rounds) cartCount = rounds;
+      if (cartEl.value !== String(cartCount)) cartEl.value = String(cartCount);
+
+      const twilightPct = rounds > 0 ? (100 * twilightCount) / rounds : 0;
+      const cartPct = rounds > 0 ? (100 * cartCount) / rounds : 0;
+      const taxPct     = getTaxPct();
       const R          = getRates();
 
-      const weeks  = months * (365.25 / 12 / 7);
-      const rounds = Math.round(rpw * weeks * 10) / 10;
-
       // Update display values
-      document.getElementById('rpw-out').textContent    = rpw.toFixed(1);
-      document.getElementById('months-out').textContent = months + ' mo';
-      document.getElementById('twi-out').textContent    = twilightPct + '%';
-      document.getElementById('cart-out').textContent   = cartPct + '%';
+      document.getElementById('rounds-out').textContent = String(rounds);
+      document.getElementById('twi-out').textContent    = String(twilightCount);
+      document.getElementById('cart-out').textContent   = String(cartCount);
 
-      const { noCost, regCost, unlimCost, cartTotal } = calcCosts(rounds, twilightPct, cartPct, R);
+      const raw = calcCosts(rounds, twilightPct, cartPct, R);
+      const noCost    = applyTax(raw.noCost, taxPct);
+      const regCost   = applyTax(raw.regCost, taxPct);
+      const unlimCost = applyTax(raw.unlimCost, taxPct);
+      const cartTotal = raw.cartTotal;
       const costs = [noCost, regCost, unlimCost];
       const minCost = Math.min(...costs);
+
+      function taxSuffix(preTax) {
+        if (!taxPct) return '';
+        const t = preTax * (taxPct / 100);
+        return `<br>Subtotal $${preTax.toFixed(2)}<br>Tax (${taxPct}%): $${t.toFixed(2)}`;
+      }
 
       // --- Cards ---
       const cardDefs = [
@@ -779,19 +809,19 @@
           label: 'No pass',
           cost: noCost,
           color: '#4a9eff',
-          breakdown: `${(rounds*(1-twilightPct/100)).toFixed(1)} prime @ $${R.noPrime}<br>${(rounds*twilightPct/100).toFixed(1)} twilight @ $${R.noTwi}<br>Cart: $${cartTotal.toFixed(2)}`
+          breakdown: `${rounds - twilightCount} prime @ $${R.noPrime}<br>${twilightCount} twilight @ $${R.noTwi}<br>${cartCount} rounds w/ cart: $${cartTotal.toFixed(2)}${taxSuffix(raw.noCost)}`
         },
         {
           label: 'Regular pass',
           cost: regCost,
           color: '#a87fdd',
-          breakdown: `$${R.regUp} upfront<br>${(rounds*(1-twilightPct/100)).toFixed(1)} prime @ $${R.regPrime}<br>${(rounds*twilightPct/100).toFixed(1)} twilight @ $${R.regTwi}<br>Cart: $${cartTotal.toFixed(2)}`
+          breakdown: `$${R.regUp} upfront<br>${rounds - twilightCount} prime @ $${R.regPrime}<br>${twilightCount} twilight @ $${R.regTwi}<br>${cartCount} rounds w/ cart: $${cartTotal.toFixed(2)}${taxSuffix(raw.regCost)}`
         },
         {
           label: 'Unlimited pass',
           cost: unlimCost,
           color: '#dd7a4a',
-          breakdown: `$${R.unlimUp} upfront<br>Cart: $${cartTotal.toFixed(2)}`
+          breakdown: `$${R.unlimUp} upfront<br>${cartCount} rounds w/ cart: $${cartTotal.toFixed(2)}${taxSuffix(raw.unlimCost)}`
         }
       ];
 
@@ -809,21 +839,19 @@
       }).join('');
 
       // --- Stats ---
-      const primeRounds = rounds * (1 - twilightPct / 100);
-      const twiRounds   = rounds * twilightPct / 100;
       document.getElementById('stats').innerHTML = `
         <div class="stat"><div class="stat-label">Total rounds</div><div class="stat-val">${rounds}</div></div>
-        <div class="stat"><div class="stat-label">Prime time</div><div class="stat-val">${primeRounds.toFixed(1)}</div></div>
-        <div class="stat"><div class="stat-label">Twilight</div><div class="stat-val">${twiRounds.toFixed(1)}</div></div>
-        <div class="stat"><div class="stat-label">Total cart fees</div><div class="stat-val">$${cartTotal.toFixed(0)}</div></div>
+        <div class="stat"><div class="stat-label">Prime time</div><div class="stat-val">${rounds - twilightCount}</div></div>
+        <div class="stat"><div class="stat-label">Twilight</div><div class="stat-val">${twilightCount}</div></div>
+        <div class="stat"><div class="stat-label">Rounds with cart</div><div class="stat-val">${cartCount}</div></div>
       `;
 
       // --- Chart ---
       const maxR  = Math.max(80, Math.ceil(rounds * 1.5));
       const labels  = Array.from({ length: maxR }, (_, i) => i + 1);
-      const noData    = labels.map(r => calcCosts(r, twilightPct, cartPct, R).noCost);
-      const regData   = labels.map(r => calcCosts(r, twilightPct, cartPct, R).regCost);
-      const unlimData = labels.map(r => calcCosts(r, twilightPct, cartPct, R).unlimCost);
+      const noData    = labels.map(r => applyTax(calcCosts(r, twilightPct, cartPct, R).noCost, taxPct));
+      const regData   = labels.map(r => applyTax(calcCosts(r, twilightPct, cartPct, R).regCost, taxPct));
+      const unlimData = labels.map(r => applyTax(calcCosts(r, twilightPct, cartPct, R).unlimCost, taxPct));
 
       // vertical line plugin for current rounds
       const currentRoundsPlugin = {
@@ -904,21 +932,19 @@
 
       // --- Break-even table ---
       const { beNoReg, beRegUnlim, beNoUnlim } = breakEven(twilightPct, cartPct, R);
-      const rpwVal = rpw;
       const fmt = r => r ? `${r} rounds` : 'never';
-      const fmtWk = r => r ? `${(r / rpwVal).toFixed(1)} wks` : '—';
       document.getElementById('be-body').innerHTML = `
-        <tr><td>No pass → Regular pass</td><td>${fmt(beNoReg)}</td><td>${fmtWk(beNoReg)}</td></tr>
-        <tr><td>Regular pass → Unlimited</td><td>${fmt(beRegUnlim)}</td><td>${fmtWk(beRegUnlim)}</td></tr>
-        <tr><td>No pass → Unlimited</td><td>${fmt(beNoUnlim)}</td><td>${fmtWk(beNoUnlim)}</td></tr>
+        <tr><td>No pass → Regular pass</td><td>${fmt(beNoReg)}</td></tr>
+        <tr><td>Regular pass → Unlimited</td><td>${fmt(beRegUnlim)}</td></tr>
+        <tr><td>No pass → Unlimited</td><td>${fmt(beNoUnlim)}</td></tr>
       `;
     }
 
     // Attach listeners
-    ['rpw','months','twi','cart'].forEach(id =>
+    ['rounds-season','twi','cart'].forEach(id =>
       document.getElementById(id).addEventListener('input', render)
     );
-    ['r-no-prime','r-no-twi','r-reg-up','r-reg-prime','r-reg-twi','r-unlim-up','r-cart'].forEach(id =>
+    ['r-no-prime','r-no-twi','r-reg-up','r-reg-prime','r-reg-twi','r-unlim-up','r-cart','tax-pct'].forEach(id =>
       document.getElementById(id).addEventListener('input', render)
     );
 
